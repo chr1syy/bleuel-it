@@ -45,6 +45,96 @@ async function fetchRepositories() {
     }
 }
 
+// Fetch profile README
+async function fetchProfileReadme() {
+    try {
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`);
+        if (!response.ok) throw new Error('Failed to fetch README');
+        const data = await response.json();
+        // Decode base64 content
+        const content = atob(data.content);
+        return content;
+    } catch (error) {
+        console.error('Error fetching README:', error);
+        return null;
+    }
+}
+
+// Simple markdown to HTML converter
+function markdownToHtml(markdown) {
+    let html = markdown;
+
+    // Escape HTML special characters except for URLs
+    html = html
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/&amp;(#\d+|#x[0-9a-f]+|[a-z]+);/gi, '&$1;'); // Restore entities
+
+    // Headings
+    html = html.replace(/^### (.*?)$/gim, '<h3>$1</h3>');
+    html = html.replace(/^## (.*?)$/gim, '<h2>$1</h2>');
+    html = html.replace(/^# (.*?)$/gim, '<h1>$1</h1>');
+
+    // Horizontal rules
+    html = html.replace(/^---+$/gim, '<hr>');
+    html = html.replace(/^\*\*\*+$/gim, '<hr>');
+
+    // Bold
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+    // Italic
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+
+    // Links
+    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+    // Code blocks
+    html = html.replace(/```(.*?)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+
+    // Inline code
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    // Unordered lists
+    html = html.replace(/^\* (.*?)$/gim, '<li>$1</li>');
+    html = html.replace(/^\- (.*?)$/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
+    html = html.replace(/<\/ul>\n<ul>/g, '');
+
+    // Ordered lists
+    html = html.replace(/^\d+\. (.*?)$/gim, '<li>$1</li>');
+    html = html.replace(/(<li>.*?<\/li>)/s, '<ol>$1</ol>');
+    html = html.replace(/<\/ol>\n<ol>/g, '');
+
+    // Paragraphs
+    html = html.split('\n\n').map(p => {
+        p = p.trim();
+        if (p && !p.match(/^<[hpuol]/)) {
+            return `<p>${p}</p>`;
+        }
+        return p;
+    }).join('\n');
+
+    // Blockquotes
+    html = html.replace(/^\&gt; (.*?)$/gim, '<blockquote>$1</blockquote>');
+
+    return html;
+}
+
+// Render README
+function renderReadme(content) {
+    const readmeContent = document.getElementById('readmeContent');
+    if (!content) {
+        readmeContent.innerHTML = '<p>No README found for profile.</p>';
+        return;
+    }
+
+    const html = markdownToHtml(content);
+    readmeContent.innerHTML = html;
+}
+
 // Get language color
 function getLanguageColor(language) {
     const colors = {
@@ -142,10 +232,16 @@ async function init() {
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
 
     // Fetch data
-    const [userData, repos] = await Promise.all([
+    const [userData, repos, readme] = await Promise.all([
         fetchUserData(),
         fetchRepositories(),
+        fetchProfileReadme(),
     ]);
+
+    // Render README
+    if (readme) {
+        renderReadme(readme);
+    }
 
     if (userData && repos.length > 0) {
         renderRepositories(repos, 'updated');
