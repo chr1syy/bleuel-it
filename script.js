@@ -48,16 +48,16 @@ async function fetchRepositories() {
 // Fetch profile README
 async function fetchProfileReadme() {
     try {
+        // First get the README metadata
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`);
         if (!response.ok) throw new Error('Failed to fetch README');
         const data = await response.json();
-        // Decode base64 content with proper UTF-8 handling
-        const binaryString = atob(data.content);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const content = new TextDecoder('utf-8').decode(bytes);
+        
+        // Use the raw download URL for proper UTF-8 content
+        const rawResponse = await fetch(data.download_url);
+        if (!rawResponse.ok) throw new Error('Failed to fetch raw README content');
+        
+        const content = await rawResponse.text();
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
@@ -100,18 +100,7 @@ function renderReadme(content) {
     }
 
     const html = markdownToHtml(content);
-    
-    // Clear existing content
-    readmeContent.innerHTML = '';
-    
-    // Create a temporary container to parse HTML
-    const temp = document.createElement('div');
-    temp.innerHTML = html;
-    
-    // Move parsed content to readmeContent
-    while (temp.firstChild) {
-        readmeContent.appendChild(temp.firstChild);
-    }
+    readmeContent.innerHTML = html;
 }
 
 // Get language color
