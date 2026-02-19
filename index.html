@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chr1syy - GitHub Profile</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="theme-toggle">
+                    <button id="themeBtn" class="theme-btn" aria-label="Toggle theme">
+                        <span class="theme-icon">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Profile Section -->
+        <main class="main-content">
+            <div class="profile-section">
+                <div class="profile-header">
+                    <img src="https://avatars.githubusercontent.com/u/24278827?v=4" alt="chr1syy" class="profile-avatar">
+                    <div class="profile-info">
+                        <h1 class="profile-name">Chris</h1>
+                        <p class="profile-login">@chr1syy</p>
+                        <p class="profile-bio">Passionate developer & open source enthusiast</p>
+                        <div class="profile-meta">
+                            <span class="meta-item">
+                                <svg class="icon" viewBox="0 0 16 16" width="16" height="16">
+                                    <path d="M2 2.5A2.5 2.5 0 015 5h4a2.5 2.5 0 110 5H9.71l.346.346a.75.75 0 01-1.061 1.061l-1.5-1.5a.75.75 0 010-1.061l1.5-1.5a.75.75 0 111.061 1.061L9.71 9H9a1.5 1.5 0 100-3h-4a1 1 0 100 2h.5a.75.75 0 010 1.5H5a2.5 2.5 0 01-3-2.5 2.5 2.5 0 012.5-2.5z"></path>
+                                </svg>
+                                Following 5
+                            </span>
+                            <span class="meta-item">
+                                <svg class="icon" viewBox="0 0 16 16" width="16" height="16">
+                                    <path d="M2.5 1A1.5 1.5 0 001 2.5v11A1.5 1.5 0 002.5 15h11a1.5 1.5 0 001.5-1.5v-11A1.5 1.5 0 0013.5 1h-11zM2 2.5a.5.5 0 01.5-.5h11a.5.5 0 01.5.5v11a.5.5 0 01-.5.5h-11a.5.5 0 01-.5-.5v-11z"></path>
+                                </svg>
+                                10 repositories
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Repositories Section -->
+            <section class="repositories-section">
+                <div class="section-header">
+                    <h2>Repositories</h2>
+                    <div class="filters">
+                        <select id="sortSelect" class="filter-select">
+                            <option value="updated">Sort by: Recently updated</option>
+                            <option value="name">Sort by: Name</option>
+                            <option value="stars">Sort by: Most stars</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="reposList" class="repos-grid">
+                    <div class="loading">Loading repositories...</div>
+                </div>
+            </section>
+
+            <!-- GitHub Stats Section -->
+            <section class="stats-section">
+                <h2>GitHub Stats</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalRepos">-</div>
+                        <div class="stat-label">Total Repositories</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalStars">-</div>
+                        <div class="stat-label">Total Stars</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="totalFollowers">-</div>
+                        <div class="stat-label">Followers</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Built with ❤️ | <a href="https://github.com/chr1syy" target="_blank">Follow on GitHub</a></p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
