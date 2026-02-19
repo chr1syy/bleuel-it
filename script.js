@@ -1,6 +1,6 @@
 const THEME_KEY = 'theme-preference';
 const GITHUB_USERNAME = 'chr1syy';
-const CACHE_KEY = 'github-data-cache-v2';
+const CACHE_KEY = 'github-data-cache-v3';
 const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
 const GITHUB_TOKEN = '{{GITHUB_TOKEN}}';
 
@@ -13,7 +13,6 @@ function getCachedData() {
         const data = JSON.parse(cached);
         const now = Date.now();
 
-        // Check if cache is still valid
         if (now - data.timestamp > CACHE_DURATION) {
             localStorage.removeItem(CACHE_KEY);
             return null;
@@ -98,78 +97,50 @@ async function fetchRepositories() {
     }
 }
 
-// Fetch profile README
+// Fetch profile README as pre-rendered HTML via GitHub Markdown API
 async function fetchProfileReadme() {
     try {
-        // First get the README metadata
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`, {
+        // Get raw markdown content
+        const readmeResponse = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`, {
             headers: createHeaders()
         });
-        if (!response.ok) throw new Error('Failed to fetch README');
-        const data = await response.json();
+        if (!readmeResponse.ok) throw new Error('Failed to fetch README metadata');
+        const readmeData = await readmeResponse.json();
 
-        // Fetch the raw README content directly
-        const rawResponse = await fetch(data.download_url);
-        if (!rawResponse.ok) throw new Error('Failed to fetch raw README content');
+        const rawResponse = await fetch(readmeData.download_url);
+        if (!rawResponse.ok) throw new Error('Failed to fetch raw README');
+        const markdown = await rawResponse.text();
 
-        return await rawResponse.text();
+        // Use GitHub's own Markdown rendering API — handles emojis, GFM, everything
+        const renderHeaders = createHeaders();
+        renderHeaders['Content-Type'] = 'application/json';
+
+        const renderResponse = await fetch('https://api.github.com/markdown', {
+            method: 'POST',
+            headers: renderHeaders,
+            body: JSON.stringify({
+                text: markdown,
+                mode: 'gfm',
+                context: `${GITHUB_USERNAME}/${GITHUB_USERNAME}`
+            })
+        });
+        if (!renderResponse.ok) throw new Error('Failed to render markdown');
+
+        return await renderResponse.text();
     } catch (error) {
         console.error('Error fetching README:', error);
         return null;
     }
 }
 
-// Fetch GitHub emoji map and configure marked once
-let markedReady = false;
-
-async function initMarked() {
-    if (markedReady || typeof marked === 'undefined') return;
-
-    marked.setOptions({
-        breaks: true,
-        gfm: true,
-    });
-
-    if (typeof markedEmoji !== 'undefined') {
-        try {
-            const response = await fetch('https://api.github.com/emojis', {
-                headers: createHeaders()
-            });
-            if (response.ok) {
-                const emojiMap = await response.json();
-                marked.use(markedEmoji({ emojis: emojiMap }));
-            }
-        } catch (e) {
-            console.warn('Could not load GitHub emoji map:', e);
-        }
-    }
-
-    markedReady = true;
-}
-
-// Simple markdown to HTML converter using marked.js
-function markdownToHtml(markdown) {
-    if (typeof marked === 'undefined') {
-        return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
-    }
-
-    try {
-        return marked.parse(markdown);
-    } catch (error) {
-        console.error('Error parsing markdown:', error);
-        return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
-    }
-}
-
-// Render README
-function renderReadme(content) {
+// Render README — content is already HTML from GitHub's API
+function renderReadme(html) {
     const readmeContent = document.getElementById('readmeContent');
-    if (!content) {
+    if (!html) {
         readmeContent.innerHTML = '<p>No README found for profile.</p>';
         return;
     }
-
-    readmeContent.innerHTML = markdownToHtml(content);
+    readmeContent.innerHTML = html;
 }
 
 // Get language color
@@ -229,7 +200,6 @@ function renderRepositories(repos, sortBy = 'updated') {
         return;
     }
 
-    // Filter out forks if needed, sort by preference
     let filtered = repos.filter(repo => !repo.fork);
 
     if (sortBy === 'name') {
@@ -237,7 +207,6 @@ function renderRepositories(repos, sortBy = 'updated') {
     } else if (sortBy === 'stars') {
         filtered.sort((a, b) => (b.stargazers_count || 0) - (a.stargazers_count || 0));
     }
-    // 'updated' is default from API
 
     reposList.innerHTML = filtered.map(createRepoCard).join('');
 }
@@ -264,24 +233,14 @@ async function setupSortHandler(repos) {
 // Initialize app
 async function init() {
     initTheme();
-
-    // Theme toggle button
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
 
-    // Initialize marked with GitHub emoji map before rendering
-    await initMarked();
-
-    // Try to load from cache first
     const cachedData = getCachedData();
     if (cachedData) {
-        console.log('Loading data from cache');
         renderFromData(cachedData);
         return;
     }
 
-    console.log('Fetching fresh data from GitHub API');
-
-    // Fetch data
     const [userData, repos, readme] = await Promise.all([
         fetchUserData(),
         fetchRepositories(),
@@ -290,12 +249,10 @@ async function init() {
 
     const freshData = { userData, repos, readme };
 
-    // Cache the data
     if (userData && repos.length > 0) {
         setCachedData(freshData);
     }
 
-    // Render
     renderFromData(freshData);
 }
 
@@ -303,7 +260,6 @@ async function init() {
 function renderFromData(data) {
     const { userData, repos, readme } = data;
 
-    // Render README
     if (readme) {
         renderReadme(readme);
     }
