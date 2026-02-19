@@ -1,6 +1,6 @@
 const THEME_KEY = 'theme-preference';
 const GITHUB_USERNAME = 'chr1syy';
-const CACHE_KEY = 'github-data-cache';
+const CACHE_KEY = 'github-data-cache-v2';
 const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
 const GITHUB_TOKEN = '{{GITHUB_TOKEN}}';
 
@@ -108,47 +108,53 @@ async function fetchProfileReadme() {
         if (!response.ok) throw new Error('Failed to fetch README');
         const data = await response.json();
 
-        // Use the raw download URL for proper UTF-8 content
+        // Fetch the raw README content directly
         const rawResponse = await fetch(data.download_url);
         if (!rawResponse.ok) throw new Error('Failed to fetch raw README content');
 
-        // Ensure proper UTF-8 decoding
-        const buffer = await rawResponse.arrayBuffer();
-        const decoder = new TextDecoder('utf-8');
-        const content = decoder.decode(buffer);
-
-        return content;
+        return await rawResponse.text();
     } catch (error) {
         console.error('Error fetching README:', error);
         return null;
     }
 }
 
+// Fetch GitHub emoji map and configure marked once
+let markedReady = false;
+
+async function initMarked() {
+    if (markedReady || typeof marked === 'undefined') return;
+
+    marked.setOptions({
+        breaks: true,
+        gfm: true,
+    });
+
+    if (typeof markedEmoji !== 'undefined') {
+        try {
+            const response = await fetch('https://api.github.com/emojis', {
+                headers: createHeaders()
+            });
+            if (response.ok) {
+                const emojiMap = await response.json();
+                marked.use(markedEmoji({ emojis: emojiMap }));
+            }
+        } catch (e) {
+            console.warn('Could not load GitHub emoji map:', e);
+        }
+    }
+
+    markedReady = true;
+}
+
 // Simple markdown to HTML converter using marked.js
 function markdownToHtml(markdown) {
     if (typeof marked === 'undefined') {
-        // Fallback if marked.js isn't loaded yet
         return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
     }
-    
+
     try {
-        // Configure marked options
-        marked.setOptions({
-            breaks: true,
-            gfm: true,
-        });
-        
-        // Use emoji extension if available
-        if (typeof markedEmoji !== 'undefined') {
-            marked.use(markedEmoji(markedEmoji.defaults));
-        }
-        
-        // Parse markdown to HTML
-        let html = marked.parse(markdown);
-        
-        // Note: DOMPurify can strip emojis, so we skip it
-        // marked.js produces safe output by default
-        return html;
+        return marked.parse(markdown);
     } catch (error) {
         console.error('Error parsing markdown:', error);
         return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
@@ -157,16 +163,13 @@ function markdownToHtml(markdown) {
 
 // Render README
 function renderReadme(content) {
-    console.log('Raw README content:', content); // Debug: check if emojis are in the content
     const readmeContent = document.getElementById('readmeContent');
     if (!content) {
         readmeContent.innerHTML = '<p>No README found for profile.</p>';
         return;
     }
 
-    const html = markdownToHtml(content);
-    console.log('Rendered HTML:', html); // Debug: check the HTML output
-    readmeContent.innerHTML = html;
+    readmeContent.innerHTML = markdownToHtml(content);
 }
 
 // Get language color
@@ -264,6 +267,9 @@ async function init() {
 
     // Theme toggle button
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+    // Initialize marked with GitHub emoji map before rendering
+    await initMarked();
 
     // Try to load from cache first
     const cachedData = getCachedData();
