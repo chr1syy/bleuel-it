@@ -5,6 +5,7 @@ A clean, modern webpage that displays your GitHub profile and repositories, mimi
 ## Features
 
 - ✨ **GitHub Profile Display** - Shows your avatar, bio, and profile information
+- 📝 **Profile README** - Displays your profile README (from `username/username` repo) with full markdown support
 - 📚 **Repository Listing** - Dynamically fetches and displays all your public repositories
 - 🎨 **Light/Dark Theme** - Toggle between light and dark modes with theme persistence
 - 📊 **GitHub Stats** - Displays total repositories, stars, and followers
@@ -75,6 +76,9 @@ You can also customize:
 This webpage uses the GitHub REST API v3 to fetch:
 - User profile data from `/users/{username}`
 - User repositories from `/users/{username}/repos`
+- Profile README from `/repos/{username}/{username}/readme`
+
+The profile README is fetched from a special repository named `{username}/{username}` (e.g., `chr1syy/chr1syy`), which GitHub uses to display a custom README on your profile page.
 
 No authentication is required for public data, but unauthenticated requests are limited to 60 requests per hour per IP address. For higher limits, you can add a GitHub Personal Access Token.
 
