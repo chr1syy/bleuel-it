@@ -112,7 +112,11 @@ async function fetchProfileReadme() {
         const rawResponse = await fetch(data.download_url);
         if (!rawResponse.ok) throw new Error('Failed to fetch raw README content');
 
-        const content = await rawResponse.text();
+        // Ensure proper UTF-8 decoding
+        const buffer = await rawResponse.arrayBuffer();
+        const decoder = new TextDecoder('utf-8');
+        const content = decoder.decode(buffer);
+
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
