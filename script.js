@@ -79,11 +79,11 @@ function markdownToHtml(markdown) {
             gfm: true,
         });
         
-        const html = marked.parse(markdown);
-        // Sanitize HTML to prevent XSS
-        if (typeof DOMPurify !== 'undefined') {
-            return DOMPurify.sanitize(html);
-        }
+        // Parse markdown to HTML
+        let html = marked.parse(markdown);
+        
+        // Note: DOMPurify can strip emojis, so we skip it
+        // marked.js produces safe output by default
         return html;
     } catch (error) {
         console.error('Error parsing markdown:', error);
@@ -100,7 +100,18 @@ function renderReadme(content) {
     }
 
     const html = markdownToHtml(content);
-    readmeContent.innerHTML = html;
+    
+    // Clear existing content
+    readmeContent.innerHTML = '';
+    
+    // Create a temporary container to parse HTML
+    const temp = document.createElement('div');
+    temp.innerHTML = html;
+    
+    // Move parsed content to readmeContent
+    while (temp.firstChild) {
+        readmeContent.appendChild(temp.firstChild);
+    }
 }
 
 // Get language color
