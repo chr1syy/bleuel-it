@@ -1,6 +1,57 @@
 // Theme Management
 const THEME_KEY = 'theme-preference';
 const GITHUB_USERNAME = 'chr1syy';
+const CACHE_KEY = 'github-data-cache';
+const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
+
+// Cache management
+function getCachedData() {
+    try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (!cached) return null;
+
+        const data = JSON.parse(cached);
+        const now = Date.now();
+
+        // Check if cache is still valid
+        if (now - data.timestamp > CACHE_DURATION) {
+            localStorage.removeItem(CACHE_KEY);
+            return null;
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error reading cache:', error);
+        return null;
+    }
+}
+
+function setCachedData(data) {
+    try {
+        const cacheData = {
+            ...data,
+            timestamp: Date.now()
+        };
+        localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+        console.error('Error writing cache:', error);
+    }
+}
+
+// GitHub API with authentication support
+function createHeaders() {
+    const headers = {
+        'Accept': 'application/vnd.github.v3+json'
+    };
+
+    // Check for GitHub token in localStorage
+    const token = localStorage.getItem('github-token');
+    if (token) {
+        headers['Authorization'] = `token ${token}`;
+    }
+
+    return headers;
+}
 
 // Initialize theme
 function initTheme() {
@@ -25,7 +76,9 @@ function toggleTheme() {
 // GitHub API functions
 async function fetchUserData() {
     try {
-        const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}`);
+        const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}`, {
+            headers: createHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch user data');
         return await response.json();
     } catch (error) {
@@ -36,7 +89,9 @@ async function fetchUserData() {
 
 async function fetchRepositories() {
     try {
-        const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`);
+        const response = await fetch(`https://api.github.com/users/${GITHUB_USERNAME}/repos?per_page=100&sort=updated`, {
+            headers: createHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch repositories');
         return await response.json();
     } catch (error) {
@@ -49,7 +104,9 @@ async function fetchRepositories() {
 async function fetchProfileReadme() {
     try {
         // First get the README metadata
-        const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`);
+        const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`, {
+            headers: createHeaders()
+        });
         if (!response.ok) throw new Error('Failed to fetch README');
         const data = await response.json();
 
@@ -209,9 +266,20 @@ async function setupSortHandler(repos) {
 // Initialize app
 async function init() {
     initTheme();
+    initTokenHandling();
 
     // Theme toggle button
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+    // Try to load from cache first
+    const cachedData = getCachedData();
+    if (cachedData) {
+        console.log('Loading data from cache');
+        renderFromData(cachedData);
+        return;
+    }
+
+    console.log('Fetching fresh data from GitHub API');
 
     // Fetch data
     const [userData, repos, readme] = await Promise.all([
@@ -219,6 +287,48 @@ async function init() {
         fetchRepositories(),
         fetchProfileReadme(),
     ]);
+
+    const freshData = { userData, repos, readme };
+
+    // Cache the data
+    if (userData && repos.length > 0) {
+        setCachedData(freshData);
+    }
+
+    // Render
+    renderFromData(freshData);
+}
+
+// Token handling
+function initTokenHandling() {
+    const tokenInput = document.getElementById('tokenInput');
+    const tokenBtn = document.getElementById('tokenBtn');
+
+    // Load existing token
+    const existingToken = localStorage.getItem('github-token');
+    if (existingToken) {
+        tokenInput.value = existingToken;
+    }
+
+    // Handle token setting
+    tokenBtn.addEventListener('click', () => {
+        const token = tokenInput.value.trim();
+        if (token) {
+            localStorage.setItem('github-token', token);
+            alert('GitHub token saved! Refreshing data...');
+            // Clear cache and reload
+            localStorage.removeItem(CACHE_KEY);
+            location.reload();
+        } else {
+            localStorage.removeItem('github-token');
+            alert('GitHub token removed!');
+        }
+    });
+}
+
+// Helper function to render data
+function renderFromData(data) {
+    const { userData, repos, readme } = data;
 
     // Render README
     if (readme) {
