@@ -51,8 +51,13 @@ async function fetchProfileReadme() {
         const response = await fetch(`https://api.github.com/repos/${GITHUB_USERNAME}/${GITHUB_USERNAME}/readme`);
         if (!response.ok) throw new Error('Failed to fetch README');
         const data = await response.json();
-        // Decode base64 content
-        const content = atob(data.content);
+        // Decode base64 content with proper UTF-8 handling
+        const binaryString = atob(data.content);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        const content = new TextDecoder('utf-8').decode(bytes);
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
