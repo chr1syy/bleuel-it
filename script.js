@@ -153,6 +153,7 @@ function markdownToHtml(markdown) {
 
 // Render README
 function renderReadme(content) {
+    console.log('Raw README content:', content); // Debug: check if emojis are in the content
     const readmeContent = document.getElementById('readmeContent');
     if (!content) {
         readmeContent.innerHTML = '<p>No README found for profile.</p>';
@@ -160,6 +161,7 @@ function renderReadme(content) {
     }
 
     const html = markdownToHtml(content);
+    console.log('Rendered HTML:', html); // Debug: check the HTML output
     readmeContent.innerHTML = html;
 }
 
