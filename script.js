@@ -58,26 +58,6 @@ async function fetchProfileReadme() {
             bytes[i] = binaryString.charCodeAt(i);
         }
         const content = new TextDecoder('utf-8').decode(bytes);
-        
-        // Use GitHub's markdown API to render the markdown properly
-        const markdownResponse = await fetch('https://api.github.com/markdown', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                text: content,
-                mode: 'gfm',
-                context: `${GITHUB_USERNAME}/${GITHUB_USERNAME}`
-            })
-        });
-        
-        if (markdownResponse.ok) {
-            const html = await markdownResponse.text();
-            return html;
-        }
-        
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
@@ -85,67 +65,30 @@ async function fetchProfileReadme() {
     }
 }
 
-// Simple markdown to HTML converter (fallback)
+// Simple markdown to HTML converter using marked.js
 function markdownToHtml(markdown) {
-    let html = markdown;
-
-    // Escape HTML special characters except for URLs
-    html = html
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/&amp;(#\d+|#x[0-9a-f]+|[a-z]+);/gi, '&$1;'); // Restore entities
-
-    // Headings
-    html = html.replace(/^### (.*?)$/gim, '<h3>$1</h3>');
-    html = html.replace(/^## (.*?)$/gim, '<h2>$1</h2>');
-    html = html.replace(/^# (.*?)$/gim, '<h1>$1</h1>');
-
-    // Horizontal rules
-    html = html.replace(/^---+$/gim, '<hr>');
-    html = html.replace(/^\*\*\*+$/gim, '<hr>');
-
-    // Bold
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-
-    // Italic
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-
-    // Links
-    html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
-
-    // Code blocks
-    html = html.replace(/```(.*?)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
-
-    // Inline code
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    // Unordered lists
-    html = html.replace(/^\* (.*?)$/gim, '<li>$1</li>');
-    html = html.replace(/^\- (.*?)$/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*?<\/li>)/s, '<ul>$1</ul>');
-    html = html.replace(/<\/ul>\n<ul>/g, '');
-
-    // Ordered lists
-    html = html.replace(/^\d+\. (.*?)$/gim, '<li>$1</li>');
-    html = html.replace(/(<li>.*?<\/li>)/s, '<ol>$1</ol>');
-    html = html.replace(/<\/ol>\n<ol>/g, '');
-
-    // Paragraphs
-    html = html.split('\n\n').map(p => {
-        p = p.trim();
-        if (p && !p.match(/^<[hpuol]/)) {
-            return `<p>${p}</p>`;
+    if (typeof marked === 'undefined') {
+        // Fallback if marked.js isn't loaded yet
+        return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
+    }
+    
+    try {
+        // Configure marked options
+        marked.setOptions({
+            breaks: true,
+            gfm: true,
+        });
+        
+        const html = marked.parse(markdown);
+        // Sanitize HTML to prevent XSS
+        if (typeof DOMPurify !== 'undefined') {
+            return DOMPurify.sanitize(html);
         }
-        return p;
-    }).join('\n');
-
-    // Blockquotes
-    html = html.replace(/^\&gt; (.*?)$/gim, '<blockquote>$1</blockquote>');
-
-    return html;
+        return html;
+    } catch (error) {
+        console.error('Error parsing markdown:', error);
+        return `<p>${markdown.replace(/\n/g, '<br>')}</p>`;
+    }
 }
 
 // Render README
@@ -156,14 +99,8 @@ function renderReadme(content) {
         return;
     }
 
-    // If content is already HTML (from GitHub's API), render it directly
-    if (content.includes('<h') || content.includes('<p>') || content.includes('<strong>')) {
-        readmeContent.innerHTML = content;
-    } else {
-        // Otherwise use fallback markdown converter
-        const html = markdownToHtml(content);
-        readmeContent.innerHTML = html;
-    }
+    const html = markdownToHtml(content);
+    readmeContent.innerHTML = html;
 }
 
 // Get language color
