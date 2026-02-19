@@ -134,6 +134,11 @@ function markdownToHtml(markdown) {
             gfm: true,
         });
         
+        // Use emoji extension if available
+        if (typeof markedEmoji !== 'undefined') {
+            marked.use(markedEmoji(markedEmoji.defaults));
+        }
+        
         // Parse markdown to HTML
         let html = marked.parse(markdown);
         
