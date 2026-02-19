@@ -110,19 +110,11 @@ async function fetchProfileReadme() {
         if (!response.ok) throw new Error('Failed to fetch README');
         const data = await response.json();
 
-        console.log('README metadata:', data);
-        console.log('Download URL:', data.download_url);
-
         // Use the raw download URL for proper UTF-8 content
         const rawResponse = await fetch(data.download_url);
         if (!rawResponse.ok) throw new Error('Failed to fetch raw README content');
 
         const content = await rawResponse.text();
-
-        console.log('Raw content preview:', content.substring(0, 200));
-        console.log('Contains emoji:', content.includes('👋'));
-        console.log('Content length:', content.length);
-
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
@@ -164,13 +156,7 @@ function renderReadme(content) {
         return;
     }
 
-    console.log('Rendering content preview:', content.substring(0, 200));
-
     const html = markdownToHtml(content);
-
-    console.log('Generated HTML preview:', html.substring(0, 200));
-    console.log('HTML contains emoji:', html.includes('👋'));
-
     readmeContent.innerHTML = html;
 }
 
