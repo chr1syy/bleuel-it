@@ -58,6 +58,26 @@ async function fetchProfileReadme() {
             bytes[i] = binaryString.charCodeAt(i);
         }
         const content = new TextDecoder('utf-8').decode(bytes);
+        
+        // Use GitHub's markdown API to render the markdown properly
+        const markdownResponse = await fetch('https://api.github.com/markdown', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json'
+            },
+            body: JSON.stringify({
+                text: content,
+                mode: 'gfm',
+                context: `${GITHUB_USERNAME}/${GITHUB_USERNAME}`
+            })
+        });
+        
+        if (markdownResponse.ok) {
+            const html = await markdownResponse.text();
+            return html;
+        }
+        
         return content;
     } catch (error) {
         console.error('Error fetching README:', error);
@@ -65,7 +85,7 @@ async function fetchProfileReadme() {
     }
 }
 
-// Simple markdown to HTML converter
+// Simple markdown to HTML converter (fallback)
 function markdownToHtml(markdown) {
     let html = markdown;
 
@@ -136,8 +156,14 @@ function renderReadme(content) {
         return;
     }
 
-    const html = markdownToHtml(content);
-    readmeContent.innerHTML = html;
+    // If content is already HTML (from GitHub's API), render it directly
+    if (content.includes('<h') || content.includes('<p>') || content.includes('<strong>')) {
+        readmeContent.innerHTML = content;
+    } else {
+        // Otherwise use fallback markdown converter
+        const html = markdownToHtml(content);
+        readmeContent.innerHTML = html;
+    }
 }
 
 // Get language color

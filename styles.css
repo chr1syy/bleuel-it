@@ -255,12 +255,33 @@ body {
     margin-bottom: 16px;
 }
 
-.readme-content strong {
+.readme-content em {
+    font-style: italic;
+}
+
+/* GitHub markdown styles */
+.readme-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.readme-content table th,
+.readme-content table td {
+    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.readme-content table th {
+    background-color: var(--hover-bg);
     font-weight: 600;
 }
 
-.readme-content em {
-    font-style: italic;
+.readme-content .emoji {
+    height: 1.2em;
+    width: 1.2em;
+    vertical-align: text-bottom;
 }
 
 /* Repositories Section */
