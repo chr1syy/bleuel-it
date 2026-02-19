@@ -47,44 +47,8 @@ body {
 
 .header-content {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
-}
-
-.token-section {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
-
-.token-input {
-    padding: 6px 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--bg-primary);
-    color: var(--text-primary);
-    font-size: 14px;
-    width: 200px;
-}
-
-.token-input:focus {
-    outline: none;
-    border-color: var(--accent-color);
-}
-
-.token-btn {
-    padding: 6px 12px;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    background-color: var(--bg-secondary);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 14px;
-    transition: background-color 0.2s ease;
-}
-
-.token-btn:hover {
-    background-color: var(--hover-bg);
 }
 
 .theme-toggle {

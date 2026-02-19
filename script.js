@@ -1,8 +1,8 @@
-// Theme Management
 const THEME_KEY = 'theme-preference';
 const GITHUB_USERNAME = 'chr1syy';
 const CACHE_KEY = 'github-data-cache';
 const CACHE_DURATION = 1000 * 60 * 30; // 30 minutes
+const GITHUB_TOKEN = '{{GITHUB_TOKEN}}';
 
 // Cache management
 function getCachedData() {
@@ -44,10 +44,8 @@ function createHeaders() {
         'Accept': 'application/vnd.github.v3+json'
     };
 
-    // Check for GitHub token in localStorage
-    const token = localStorage.getItem('github-token');
-    if (token) {
-        headers['Authorization'] = `token ${token}`;
+    if (GITHUB_TOKEN && GITHUB_TOKEN !== '{{GITHUB_TOKEN}}') {
+        headers['Authorization'] = `token ${GITHUB_TOKEN}`;
     }
 
     return headers;
@@ -252,7 +250,6 @@ async function setupSortHandler(repos) {
 // Initialize app
 async function init() {
     initTheme();
-    initTokenHandling();
 
     // Theme toggle button
     document.getElementById('themeBtn').addEventListener('click', toggleTheme);
@@ -283,33 +280,6 @@ async function init() {
 
     // Render
     renderFromData(freshData);
-}
-
-// Token handling
-function initTokenHandling() {
-    const tokenInput = document.getElementById('tokenInput');
-    const tokenBtn = document.getElementById('tokenBtn');
-
-    // Load existing token
-    const existingToken = localStorage.getItem('github-token');
-    if (existingToken) {
-        tokenInput.value = existingToken;
-    }
-
-    // Handle token setting
-    tokenBtn.addEventListener('click', () => {
-        const token = tokenInput.value.trim();
-        if (token) {
-            localStorage.setItem('github-token', token);
-            alert('GitHub token saved! Refreshing data...');
-            // Clear cache and reload
-            localStorage.removeItem(CACHE_KEY);
-            location.reload();
-        } else {
-            localStorage.removeItem('github-token');
-            alert('GitHub token removed!');
-        }
-    });
 }
 
 // Helper function to render data
